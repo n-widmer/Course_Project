@@ -1,8 +1,9 @@
 import os
 import re
 
-from flask import Flask, render_template, request, session, redirect, url_for
+from flask import Flask, render_template, request, session, url_for
 from flask_mysqldb import MySQL
+from werkzeug.security import generate_password_hash
 
 app = Flask(__name__)
 
@@ -23,19 +24,20 @@ def index():
 def register_user():
     message = ""
     if request.method == 'POST':
-        if 'email' in request.form and 'password' in request.form and 'name' in request.form and 'phone_number' in request.form:
+        if 'email' in request.form and 'password' in request.form and 'username' in request.form:
             email = request.form['email']
+            username = request.form['username']
             password = request.form['password']
-            phone_number = request.form['phone_number']
-            name = request.form['name']
-            print("we are here")
+            hashed_password = generate_password_hash(password, method='pbkdf2:sha256', salt_length=16)
             cursor = mysql.connection.cursor()
-            query = "INSERT INTO Users (email, password, phone_number, name) VALUES (%s, %s, %s, %s);"
-            cursor.execute(query, (email, password, phone_number, name,))
+            query = f"INSERT INTO Users (email, username, password) VALUES ('{email}', '{username}', '{hashed_password}');"
+            cursor.execute(query)
+            #cursor.execute(query, (email, password, username,))
             mysql.connection.commit()
-            message = "You Have Successfully Registered"
             cursor.close()
-        return render_template("index.html", message=message, email=email)
+            message = "You Have Successfully Registered"
+
+        return render_template("index.html", message=message, username=username)
     else:
         message = "Please fill out the form correctly"
         return render_template("register.html", message=message)
@@ -44,16 +46,18 @@ def register_user():
 def login_user():
     message = ""
     if request.method == 'POST':
-        if 'email' in request.form and 'password' in request.form:
-            email = request.form['email']
+        if 'username' in request.form and 'password' in request.form:
+            username = request.form['username']
             password = request.form['password']
             cursor = mysql.connection.cursor()
-            query = "SELECT * FROM Users WHERE email = %s AND password = %s;"
-            cursor.execute(query, (email, password,))
+            query = f"SELECT * FROM Users WHERE username = '{username}' AND password = '{password}';"
+            cursor.execute(query)
+            #query = "SELECT * FROM Users WHERE email = %s AND password = %s;"
+            #cursor.execute(query, (email, password,))
             account = cursor.fetchone()
             if account:
                 message = "Login Successful"
-                return render_template("index.html", message=message, email=email)
+                return render_template("index.html", message=message, username=username)
             else:
                 message = "Invalid email or password"
                 return render_template("login.html", message=message)
@@ -63,6 +67,7 @@ def login_user():
 @app.route("/logout", methods=['GET', 'POST'])
 def logout_user():
     session.clear()
-    return redirect(url_for('index'))
+    return render_template("index.html")
+
 if __name__ == '__main__':
     app.run(debug=True)
