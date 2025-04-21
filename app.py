@@ -3,7 +3,7 @@ import re
 
 from flask import Flask, render_template, request, session, url_for
 from flask_mysqldb import MySQL
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 
@@ -30,7 +30,7 @@ def register_user():
             password = request.form['password']
             hashed_password = generate_password_hash(password, method='pbkdf2:sha256', salt_length=16)
             cursor = mysql.connection.cursor()
-            query = f"INSERT INTO Users (email, username, password) VALUES ('{email}', '{username}', '{hashed_password}');"
+            query = f"INSERT INTO users (email, username, password) VALUES ('{email}', '{username}', '{hashed_password}');"
             cursor.execute(query)
             #cursor.execute(query, (email, username, password,))
             mysql.connection.commit()
@@ -49,8 +49,10 @@ def login_user():
         if 'username' in request.form and 'password' in request.form:
             username = request.form['username']
             password = request.form['password']
+            hashed_password = generate_password_hash(password, method='pbkdf2:sha256', salt_length=16)
+            check_password_hash(hashed_password, password)
             cursor = mysql.connection.cursor()
-            query = f"SELECT * FROM Users WHERE username = '{username}' AND password = '{password}';"
+            query = f"SELECT * FROM Users WHERE username = '{username}' );"
             cursor.execute(query)
             #query = "SELECT * FROM Users WHERE email = %s AND password = %s;"
             #cursor.execute(query, (email, password,))
