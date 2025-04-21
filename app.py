@@ -32,7 +32,7 @@ def register_user():
             cursor = mysql.connection.cursor()
             query = f"INSERT INTO Users (email, username, password) VALUES ('{email}', '{username}', '{hashed_password}');"
             cursor.execute(query)
-            #cursor.execute(query, (email, password, username,))
+            #cursor.execute(query, (email, username, password,))
             mysql.connection.commit()
             cursor.close()
             message = "You Have Successfully Registered"
