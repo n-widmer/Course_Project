@@ -1,7 +1,7 @@
 import os
 import re
 
-from flask import Flask, render_template, request, session, url_for
+from flask import Flask, render_template, request, session
 from flask_mysqldb import MySQL
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -51,8 +51,6 @@ def register_user():
             hashed_password = generate_password_hash(password, method='pbkdf2:sha256', salt_length=16)
             cursor = mysql.connection.cursor()
 
-            cursor.execute("USE widmerDB;") 
-
             encrypted_phone = encrypt_phone(phone, key)
 
             query = f"INSERT INTO users (username, email, password, phone) VALUES ('{username}', '{email}', '{hashed_password}', '{encrypted_phone}');"
@@ -75,28 +73,31 @@ def login_user():
     cursor = mysql.connection.cursor()
 
     if request.method == 'POST':
-        if 'email' in request.form and 'password' in request.form:
-            email = request.form['email']
-            password = request.form['password']
+        if 'username' in request.form and 'password' in request.form:
+            username = request.form['username']
+            #password = request.form['password']
             cursor = mysql.connection.cursor()
-            query = f"SELECT * FROM Users WHERE email = '{email}';"
+            query = f"SELECT * FROM Users WHERE username = '{username}';"
             cursor.execute(query)
             #query = "SELECT * FROM Users WHERE email = %s AND password = %s;"
             #cursor.execute(query, (email, password,))
             account = cursor.fetchone()
-            if account:
-                stored_password = account['password']
-                username = account['username']
-                if check_password_hash(stored_password, password):
-                    message = "Login Successful"
-                    return render_template("index.html", message=message, email=email, username=username)
-                else:
-                    print("check password hash fails")
-                    message = "Invalid email or password"
-            else:
-                print("we dont even make it to the account if statement")
-                message = "Invalid email or password"
-                return render_template("login.html", message=message)
+            email = account['email']
+            #if account:
+                #stored_password = account['password']
+                #email = account['email']
+                #if check_password_hash(stored_password, password):
+                    #message = "Login Successful"
+                    #return render_template("index.html", message=message, email=email, username=username)
+                #else:
+                    #print("check password hash fails")
+                    #message = "Invalid email or password"
+            #else:
+            message = "Login Successful!"
+            return render_template("index.html", message=message, username=username, email=email)
+        else:
+            message = "Incorrect email or password... Try Again"
+            return render_template("login.html")
     return render_template("login.html")
 
 
@@ -116,13 +117,16 @@ def encrypt_phone(phone, key):
     ct = base64.b64encode(ct_bytes).decode('utf-8')
     return iv + ':' + ct
 
-def decrypt_phone(encrypted_phone, key):
+"""def decrypt_phone(encrypted_phone, key):
     iv, ct = encrypted_phone.split(':')
     iv = base64.b64decode(iv)
     ct = base64.b64decode(ct)
     cipher = AES.new(key, AES.MODE_CBC, iv)
     pt = unpad(cipher.decrypt(ct), AES.block_size)
-    return pt.decode('utf-8')
+    return pt.decode('utf-8')"""
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+    
