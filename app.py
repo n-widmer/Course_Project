@@ -29,7 +29,6 @@ key = unhexlify(key_hex)
 
 
 
-
 mysql = MySQL(app)
 
 @app.route("/")
@@ -82,7 +81,6 @@ def login_user():
             #query = "SELECT * FROM Users WHERE email = %s AND password = %s;"
             #cursor.execute(query, (email, password,))
             account = cursor.fetchone()
-            email = account['email']
             #if account:
                 #stored_password = account['password']
                 #email = account['email']
@@ -94,7 +92,7 @@ def login_user():
                     #message = "Invalid email or password"
             #else:
             message = "Login Successful!"
-            return render_template("index.html", message=message, username=username, email=email)
+            return render_template("index.html", message=message, username=username)
         else:
             message = "Incorrect email or password... Try Again"
             return render_template("login.html")
