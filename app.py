@@ -47,24 +47,36 @@ def register_user():
             username = request.form['username']
             password = request.form['password']
             phone = request.form['phone']
-            hashed_password = generate_password_hash(password, method='pbkdf2:sha256', salt_length=16)
+            
+            if not re.match(r'[^@]+@[^@]+\.[^@]+', email):
+                message = "Invalid email address"
+                return render_template("register.html", message=message)
+            
+            if len(phone) > 15 or len(phone) < 7:
+                message = "Invalid phone number" 
+                return render_template("register.html", message=message)
+            
             cursor = mysql.connection.cursor()
 
-            encrypted_phone = encrypt_phone(phone, key)
+            query1 = "SELECT * FROM Users WHERE username = %s OR email = %s;"
+            cursor.execute(query1, (username, email,))
+            account = cursor.fetchone() #fetching first row matching the most recent query
 
-            query = f"INSERT INTO users (username, email, password, phone) VALUES ('{username}', '{email}', '{hashed_password}', '{encrypted_phone}');"
-            cursor.execute(query)
+            if account:
+                message = "Account already exists with those credentials!"
+                cursor.close()
+                return render_template("register.html", message=message)
+            else:
+                encrypted_phone = encrypt_phone(phone, key)
+                hashed_password = generate_password_hash(password, method='pbkdf2:sha256', salt_length=16)
+                query2 = "INSERT INTO Users (username, email, password, phone) VALUES (%s, %s, %s, %s);"
+                cursor.execute(query2,(username, email, hashed_password, encrypted_phone,))
+                mysql.connection.commit()
+                cursor.close()
 
-            #cursor.execute(query, (email, username, password,))
-            mysql.connection.commit()
-            cursor.close()
             message = "You Have Successfully Registered"
-
             return render_template("index.html", message=message, email=email, username=username)
-        else:
-            message = "Please fill out the form correctly"
-            return render_template("register.html", message=message)
-    return render_template("register.html")
+    return render_template("register.html", message=message)
 
 @app.route("/login", methods=['GET', 'POST'])
 def login_user():
@@ -74,28 +86,28 @@ def login_user():
     if request.method == 'POST':
         if 'username' in request.form and 'password' in request.form:
             username = request.form['username']
-            #password = request.form['password']
+            password = request.form['password']
+
             cursor = mysql.connection.cursor()
-            query = f"SELECT * FROM Users WHERE username = '{username}';"
-            cursor.execute(query)
-            #query = "SELECT * FROM Users WHERE email = %s AND password = %s;"
-            #cursor.execute(query, (email, password,))
+            query = "SELECT * FROM Users WHERE username = %s;"
+            cursor.execute(query, (username,))
             account = cursor.fetchone()
-            #if account:
-                #stored_password = account['password']
-                #email = account['email']
-                #if check_password_hash(stored_password, password):
-                    #message = "Login Successful"
-                    #return render_template("index.html", message=message, email=email, username=username)
-                #else:
-                    #print("check password hash fails")
-                    #message = "Invalid email or password"
-            #else:
-            message = "Login Successful!"
-            return render_template("index.html", message=message, username=username)
-        else:
-            message = "Incorrect email or password... Try Again"
-            return render_template("login.html")
+            cursor.close()
+
+            if account:
+                stored_password = account['password']
+                email = account['email']
+                if check_password_hash(stored_password, password):
+                    message = "Login Successful"
+                    return render_template("index.html", message=message, email=email, username=username)
+                else:
+                    
+                    message = "Invalid email or password"
+                    return render_template("login.html", message=message)
+
+            else:
+                message = "Invalid email or password"
+                return render_template("login.html", message=message)
     return render_template("login.html")
 
 
