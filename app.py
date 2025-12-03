@@ -34,7 +34,7 @@ mysql = MySQL(app)
 @app.route("/")
 def index():
 
-    print(key)
+    #print(key)
     return render_template("index.html")
 
 
